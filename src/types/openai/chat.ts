@@ -1,4 +1,5 @@
 import { LLMRoleType } from '@/types/llm';
+import { MessageToolCall } from '@/types/message';
 
 import { OpenAIFunctionCall } from './functionCall';
 
@@ -23,6 +24,9 @@ export interface OpenAIChatMessage {
    */
   content: string | UserMessageContentPart[];
 
+  /**
+   * @deprecated
+   */
   function_call?: OpenAIFunctionCall;
   name?: string;
   /**
@@ -30,26 +34,19 @@ export interface OpenAIChatMessage {
    * @description 消息发送者的角色
    */
   role: LLMRoleType;
-}
-
-export interface OpenAIChatStringMessage {
-  content: string;
-  role: LLMRoleType;
+  tool_call_id?: string;
+  tool_calls?: MessageToolCall[];
 }
 
 /**
- * @title OpenAI Stream Payload
+ * @title Chat Stream Payload
  */
-export interface OpenAIChatStreamPayload {
+export interface ChatStreamPayload {
   /**
    * @title 控制生成文本中的惩罚系数，用于减少重复性
    * @default 0
    */
   frequency_penalty?: number;
-  /**
-   * @deprecated
-   */
-  functions?: ChatCompletionFunctions[];
   /**
    * @title 生成文本的最大长度
    */
@@ -75,6 +72,10 @@ export interface OpenAIChatStreamPayload {
    * @default 0
    */
   presence_penalty?: number;
+  /**
+   * @default openai
+   */
+  provider?: string;
   /**
    * @title 是否开启流式请求
    * @default true

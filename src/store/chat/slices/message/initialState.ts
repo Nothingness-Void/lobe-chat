@@ -8,22 +8,36 @@ export interface ChatMessageState {
    */
   activeId: string;
   /**
-   * @deprecated
+   * is the AI message is generating
    */
-  chatLoadingId?: string;
+  chatLoadingIds: string[];
   inputMessage: string;
-  messageLoadingIds: [];
+  /**
+   * is the message is editing
+   */
+  messageEditingIds: string[];
+  /**
+   * is the message is creating or updating in the service
+   */
+  messageLoadingIds: string[];
   messages: ChatMessage[];
   /**
    * whether messages have fetched
    */
   messagesInit: boolean;
+  /**
+   * the tool calling stream ids
+   */
+  toolCallingStreamIds: Record<string, boolean[]>;
 }
 
 export const initialMessageState: ChatMessageState = {
   activeId: 'inbox',
+  chatLoadingIds: [],
   inputMessage: '',
+  messageEditingIds: [],
   messageLoadingIds: [],
   messages: [],
   messagesInit: false,
+  toolCallingStreamIds: {},
 };

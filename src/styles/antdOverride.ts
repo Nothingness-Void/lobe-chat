@@ -4,11 +4,9 @@ export default ({ token }: { prefixCls: string; token: Theme }) => css`
   .${token.prefixCls}-popover {
     z-index: 1100;
   }
-  .${token.prefixCls}-dropdown {
-    > ul {
-      border: 1px solid ${token.colorBorderSecondary};
-      border-radius: ${token.borderRadius}px !important;
-      box-shadow: ${token.boxShadowSecondary};
-    }
+
+  .${token.prefixCls}-menu-sub.${token.prefixCls}-menu-vertical {
+    border: 1px solid ${token.colorBorder};
+    box-shadow: ${token.boxShadow};
   }
 `;

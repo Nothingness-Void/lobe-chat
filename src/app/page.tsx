@@ -1,11 +1,23 @@
-import Page from './home';
-import Redirect from './home/Redirect';
+import { Metadata } from 'next';
 
-const Index = () => (
-  <>
-    <Page />
-    <Redirect />
-  </>
-);
+import { getCanonicalUrl } from '@/const/url';
 
-export default Index;
+import Client from './(loading)/Client';
+import Redirect from './(loading)/Redirect';
+
+const Page = () => {
+  return (
+    <>
+      <Client />
+      <Redirect />
+    </>
+  );
+};
+
+Page.displayName = 'Loading';
+
+export default Page;
+
+export const metadata: Metadata = {
+  alternates: { canonical: getCanonicalUrl('/') },
+};

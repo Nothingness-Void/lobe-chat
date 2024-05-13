@@ -1,13 +1,13 @@
 import { messageService } from '@/services/message';
 import { sessionService } from '@/services/session';
 import { topicService } from '@/services/topic';
-import { useGlobalStore } from '@/store/global';
-import { settingsSelectors } from '@/store/global/selectors';
 import { useSessionStore } from '@/store/session';
-import { sessionExportSelectors, sessionSelectors } from '@/store/session/selectors';
+import { sessionSelectors } from '@/store/session/selectors';
+import { useUserStore } from '@/store/user';
+import { settingsSelectors } from '@/store/user/selectors';
 import { ConfigFile } from '@/types/exportConfig';
 import { ChatMessage } from '@/types/message';
-import { LobeSessions } from '@/types/session';
+import { LobeSessions, SessionGroupItem } from '@/types/session';
 import { GlobalSettings } from '@/types/settings';
 import { ChatTopic } from '@/types/topic';
 import { createConfigFile, exportConfigFile } from '@/utils/config';
@@ -19,6 +19,7 @@ export interface ImportResult {
 }
 export interface ImportResults {
   messages?: ImportResult;
+  sessionGroups?: ImportResult;
   sessions: ImportResult;
   topics?: ImportResult;
 }
@@ -32,13 +33,16 @@ class ConfigService {
     return await sessionService.batchCreateSessions(sessions);
   };
   importMessages = async (messages: ChatMessage[]) => {
-    return messageService.batchCreate(messages);
+    return messageService.batchCreateMessages(messages);
   };
   importSettings = async (settings: GlobalSettings) => {
-    useGlobalStore.getState().importAppSettings(settings);
+    useUserStore.getState().importAppSettings(settings);
   };
   importTopics = async (topics: ChatTopic[]) => {
     return topicService.batchCreateTopics(topics);
+  };
+  importSessionGroups = async (sessionGroups: SessionGroupItem[]) => {
+    return sessionService.batchCreateSessionGroups(sessionGroups || []);
   };
 
   importConfigState = async (config: ConfigFile): Promise<ImportResults | undefined> => {
@@ -50,37 +54,30 @@ class ConfigService {
       }
 
       case 'agents': {
+        const sessionGroups = await this.importSessionGroups(config.state.sessionGroups);
+
         const data = await this.importSessions(config.state.sessions);
         return {
+          sessionGroups: this.mapImportResult(sessionGroups),
           sessions: this.mapImportResult(data),
         };
       }
 
       case 'all': {
         await this.importSettings(config.state.settings);
-
-        const [sessions, messages, topics] = await Promise.all([
-          this.importSessions(config.state.sessions),
-          this.importMessages(config.state.messages),
-          this.importTopics(config.state.topics),
-        ]);
-
-        return {
-          messages: this.mapImportResult(messages),
-          sessions: this.mapImportResult(sessions),
-          topics: this.mapImportResult(topics),
-        };
       }
+      // all and sessions have the same data process, so we can fall through
 
+      // eslint-disable-next-line no-fallthrough
       case 'sessions': {
-        const [sessions, messages, topics] = await Promise.all([
-          this.importSessions(config.state.sessions),
-          this.importMessages(config.state.messages),
-          this.importTopics(config.state.topics),
-        ]);
+        const sessionGroups = await this.importSessionGroups(config.state.sessionGroups);
+        const sessions = await this.importSessions(config.state.sessions);
+        const topics = await this.importTopics(config.state.topics);
+        const messages = await this.importMessages(config.state.messages);
 
         return {
           messages: this.mapImportResult(messages),
+          sessionGroups: this.mapImportResult(sessionGroups),
           sessions: this.mapImportResult(sessions),
           topics: this.mapImportResult(topics),
         };
@@ -92,9 +89,10 @@ class ConfigService {
    * export all agents
    */
   exportAgents = async () => {
-    const agents = await sessionService.getAllAgents();
+    const agents = await sessionService.getSessionsByType('agent');
+    const sessionGroups = await sessionService.getSessionGroups();
 
-    const config = createConfigFile('agents', { sessions: agents });
+    const config = createConfigFile('agents', { sessionGroups, sessions: agents });
 
     exportConfigFile(config, 'agents');
   };
@@ -103,11 +101,12 @@ class ConfigService {
    * export all sessions
    */
   exportSessions = async () => {
-    const sessions = await sessionService.getSessions();
+    const sessions = await sessionService.getSessionsByType();
+    const sessionGroups = await sessionService.getSessionGroups();
     const messages = await messageService.getAllMessages();
     const topics = await topicService.getAllTopics();
 
-    const config = createConfigFile('sessions', { messages, sessions, topics });
+    const config = createConfigFile('sessions', { messages, sessionGroups, sessions, topics });
 
     exportConfigFile(config, 'sessions');
   };
@@ -153,7 +152,7 @@ class ConfigService {
     const agent = this.getAgent(id);
     if (!agent) return;
 
-    const config = createConfigFile('agents', { sessions: [agent] });
+    const config = createConfigFile('agents', { sessionGroups: [], sessions: [agent] });
 
     exportConfigFile(config, agent.meta?.title || 'agent');
   };
@@ -173,23 +172,24 @@ class ConfigService {
    * export all data
    */
   exportAll = async () => {
-    const sessions = await sessionService.getSessions();
+    const sessions = await sessionService.getSessionsByType();
+    const sessionGroups = await sessionService.getSessionGroups();
     const messages = await messageService.getAllMessages();
     const topics = await topicService.getAllTopics();
     const settings = this.getSettings();
 
-    const config = createConfigFile('all', { messages, sessions, settings, topics });
+    const config = createConfigFile('all', { messages, sessionGroups, sessions, settings, topics });
 
     exportConfigFile(config, 'config');
   };
 
-  private getSettings = () => settingsSelectors.exportSettings(useGlobalStore.getState());
+  private getSettings = () => settingsSelectors.exportSettings(useUserStore.getState());
 
   private getSession = (id: string) =>
     sessionSelectors.getSessionById(id)(useSessionStore.getState());
 
   private getAgent = (id: string) =>
-    sessionExportSelectors.getExportAgent(id)(useSessionStore.getState());
+    sessionSelectors.getSessionById(id)(useSessionStore.getState());
 
   private mapImportResult = (input: {
     added: number;

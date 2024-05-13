@@ -1,12 +1,12 @@
 import { ActionIcon, Icon } from '@lobehub/ui';
 import { Button, Dropdown, Popconfirm } from 'antd';
-import { useResponsive } from 'antd-style';
 import { InfoIcon, MoreVerticalIcon, Settings, Trash2 } from 'lucide-react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flexbox } from 'react-layout-kit';
 
 import PluginDetailModal from '@/features/PluginDetailModal';
+import { useServerConfigStore } from '@/store/serverConfig';
 import { pluginHelpers, useToolStore } from '@/store/tool';
 import { pluginSelectors, pluginStoreSelectors } from '@/store/tool/selectors';
 import { LobeToolType } from '@/types/tool/tool';
@@ -19,13 +19,14 @@ interface ActionsProps {
 }
 
 const Actions = memo<ActionsProps>(({ identifier, type }) => {
+  const mobile = useServerConfigStore((s) => s.isMobile);
   const [installed, installing, installPlugin, unInstallPlugin] = useToolStore((s) => [
     pluginSelectors.isPluginInstalled(identifier)(s),
     pluginStoreSelectors.isPluginInstallLoading(identifier)(s),
     s.installPlugin,
     s.uninstallPlugin,
   ]);
-  const { mobile } = useResponsive();
+
   const isCustomPlugin = type === 'customPlugin';
   const { t } = useTranslation('plugin');
   const [open, setOpen] = useState(false);
@@ -69,7 +70,9 @@ const Actions = memo<ActionsProps>(({ identifier, type }) => {
                     label: (
                       <Popconfirm
                         arrow={false}
+                        cancelText={t('cancel', { ns: 'common' })}
                         okButtonProps={{ danger: true }}
+                        okText={t('ok', { ns: 'common' })}
                         onConfirm={() => {
                           unInstallPlugin(identifier);
                         }}

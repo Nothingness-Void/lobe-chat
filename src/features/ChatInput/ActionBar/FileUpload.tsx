@@ -1,14 +1,16 @@
 import { ActionIcon, Icon } from '@lobehub/ui';
 import { Upload } from 'antd';
 import { useTheme } from 'antd-style';
-import { LucideImage, LucideLoader2 } from 'lucide-react';
+import { FileUp, LucideImage, LucideLoader2 } from 'lucide-react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Center } from 'react-layout-kit';
 
+import { useAgentStore } from '@/store/agent';
+import { agentSelectors } from '@/store/agent/slices/chat';
 import { useFileStore } from '@/store/file';
-import { useSessionStore } from '@/store/session';
-import { agentSelectors } from '@/store/session/selectors';
+import { useUserStore } from '@/store/user';
+import { modelProviderSelectors } from '@/store/user/selectors';
 
 const FileUpload = memo(() => {
   const { t } = useTranslation('chat');
@@ -16,13 +18,15 @@ const FileUpload = memo(() => {
   const theme = useTheme();
   const upload = useFileStore((s) => s.uploadFile);
 
-  const canUpload = useSessionStore(agentSelectors.modelHasVisionAbility);
-
-  if (!canUpload) return null;
+  const model = useAgentStore(agentSelectors.currentAgentModel);
+  const [canUpload, enabledFiles] = useUserStore((s) => [
+    modelProviderSelectors.isModelEnabledUpload(model)(s),
+    modelProviderSelectors.isModelEnabledFiles(model)(s),
+  ]);
 
   return (
     <Upload
-      accept="image/*"
+      accept={enabledFiles ? undefined : 'image/*'}
       beforeUpload={async (file) => {
         setLoading(true);
 
@@ -31,6 +35,7 @@ const FileUpload = memo(() => {
         setLoading(false);
         return false;
       }}
+      disabled={!canUpload}
       multiple={true}
       showUploadList={false}
     >
@@ -44,7 +49,18 @@ const FileUpload = memo(() => {
           ></Icon>
         </Center>
       ) : (
-        <ActionIcon icon={LucideImage} placement={'bottom'} title={t('upload.actionTooltip')} />
+        <ActionIcon
+          disable={!canUpload}
+          icon={enabledFiles ? FileUp : LucideImage}
+          placement={'bottom'}
+          title={t(
+            canUpload
+              ? enabledFiles
+                ? 'upload.actionFiletip'
+                : 'upload.actionTooltip'
+              : 'upload.disabled',
+          )}
+        />
       )}
     </Upload>
   );

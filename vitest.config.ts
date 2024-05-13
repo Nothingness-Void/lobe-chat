@@ -9,6 +9,7 @@ export default defineConfig({
   test: {
     alias: {
       '@': resolve(__dirname, './src'),
+      '~test-utils': resolve(__dirname, './tests/utils.tsx'),
     },
     coverage: {
       all: false,
@@ -20,7 +21,7 @@ export default defineConfig({
       inline: ['vitest-canvas-mock'],
     },
     // threads: false,
-    environment: 'jsdom',
+    environment: 'happy-dom',
     globals: true,
     setupFiles: './tests/setup.ts',
   },

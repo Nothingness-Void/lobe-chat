@@ -10,11 +10,11 @@ import {
 import isEqual from 'fast-deep-equal';
 
 import { createHeaderWithOpenAI } from '@/services/_header';
-import { OPENAI_URLS, TTS_URL } from '@/services/_url';
-import { useGlobalStore } from '@/store/global';
-import { settingsSelectors } from '@/store/global/selectors';
-import { useSessionStore } from '@/store/session';
-import { agentSelectors } from '@/store/session/selectors';
+import { API_ENDPOINTS } from '@/services/_url';
+import { useAgentStore } from '@/store/agent';
+import { agentSelectors } from '@/store/agent/slices/chat';
+import { useUserStore } from '@/store/user';
+import { settingsSelectors } from '@/store/user/selectors';
 import { TTSServer } from '@/types/agent';
 
 interface TTSConfig extends TTSOptions {
@@ -24,10 +24,10 @@ interface TTSConfig extends TTSOptions {
 }
 
 export const useTTS = (content: string, config?: TTSConfig) => {
-  const ttsSettings = useGlobalStore(settingsSelectors.currentTTS, isEqual);
-  const ttsAgentSettings = useSessionStore(agentSelectors.currentAgentTTS, isEqual);
-  const lang = useGlobalStore(settingsSelectors.currentLanguage);
-  const voice = useSessionStore(agentSelectors.currentAgentTTSVoice(lang));
+  const ttsSettings = useUserStore(settingsSelectors.currentTTS, isEqual);
+  const ttsAgentSettings = useAgentStore(agentSelectors.currentAgentTTS, isEqual);
+  const lang = useUserStore(settingsSelectors.currentLanguage);
+  const voice = useAgentStore(agentSelectors.currentAgentTTSVoice(lang));
   let useSelectedTTS;
   let options: any = {};
   switch (config?.server || ttsAgentSettings.ttsService) {
@@ -36,7 +36,7 @@ export const useTTS = (content: string, config?: TTSConfig) => {
       options = {
         api: {
           headers: createHeaderWithOpenAI(),
-          serviceUrl: OPENAI_URLS.tts,
+          serviceUrl: API_ENDPOINTS.tts,
         },
         options: {
           model: ttsSettings.openAI.ttsModel,
@@ -64,7 +64,7 @@ export const useTTS = (content: string, config?: TTSConfig) => {
       useSelectedTTS = useMicrosoftSpeech;
       options = {
         api: {
-          serviceUrl: TTS_URL.microsoft,
+          serviceUrl: API_ENDPOINTS.microsoft,
         },
         options: {
           voice: config?.voice || voice,

@@ -1,23 +1,44 @@
-export const URLS = {
-  config: '/api/config',
-  market: '/api/market',
+/* eslint-disable sort-keys-fix/sort-keys-fix */
+import { transform } from 'lodash-es';
+
+import { withBasePath } from '@/utils/basePath';
+
+const mapWithBasePath = <T extends object>(apis: T): T => {
+  return transform(apis, (result, value, key) => {
+    if (typeof value === 'string') {
+      // @ts-ignore
+      result[key] = withBasePath(value);
+    } else {
+      result[key] = value;
+    }
+  });
+};
+
+export const API_ENDPOINTS = mapWithBasePath({
   proxy: '/api/proxy',
-};
+  oauth: '/api/auth',
 
-export const PLUGINS_URLS = {
+  // agent markets
+  market: '/api/market',
+  marketItem: (identifier: string) => withBasePath(`/api/market/${identifier}`),
+
+  // plugins
   gateway: '/api/plugin/gateway',
-  store: '/api/plugin/store',
-};
+  pluginStore: '/api/plugin/store',
 
-export const OPENAI_URLS = {
-  chat: '/api/openai/chat',
-  images: '/api/openai/images',
-  models: '/api/openai/models',
+  // chat
+  chat: (provider: string) => withBasePath(`/api/chat/${provider}`),
+  chatModels: (provider: string) => withBasePath(`/api/chat/models/${provider}`),
+
+  // trace
+  trace: '/api/trace',
+
+  // image
+  images: '/api/text-to-image/openai',
+
+  // TTS & STT
   stt: '/api/openai/stt',
   tts: '/api/openai/tts',
-};
-
-export const TTS_URL = {
   edge: '/api/tts/edge-speech',
   microsoft: '/api/tts/microsoft-speech',
-};
+});

@@ -1,9 +1,13 @@
-import { ErrorType } from '@/types/fetch';
-import { Translate } from '@/types/translate';
+import { IPluginErrorType } from '@lobehub/chat-plugin-sdk';
 
-import { LLMRoleType } from '../llm';
+import { ILobeAgentRuntimeErrorType } from '@/libs/agent-runtime';
+import { ErrorType } from '@/types/fetch';
+
 import { BaseDataModel } from '../meta';
-import { ChatPluginPayload } from './tools';
+import { ChatPluginPayload, ChatToolPayload } from './tools';
+import { Translate } from './translate';
+
+export type MessageRoleType = 'user' | 'system' | 'assistant' | 'tool';
 
 /**
  * 聊天消息错误对象
@@ -11,7 +15,7 @@ import { ChatPluginPayload } from './tools';
 export interface ChatMessageError {
   body?: any;
   message: string;
-  type: ErrorType;
+  type: ErrorType | IPluginErrorType | ILobeAgentRuntimeErrorType;
 }
 
 export interface ChatTranslate extends Translate {
@@ -28,10 +32,11 @@ export * from './tools';
 
 export interface ChatMessage extends BaseDataModel {
   content: string;
-  error?: any;
+  error?: ChatMessageError;
   // 扩展字段
   extra?: {
     fromModel?: string;
+    fromProvider?: string;
     // 翻译
     translate?: ChatTranslate | false;
     // TTS
@@ -39,22 +44,39 @@ export interface ChatMessage extends BaseDataModel {
   } & Record<string, any>;
 
   files?: string[];
+  /**
+   * observation id
+   */
+  observationId?: string;
+  /**
+   * parent message id
+   */
   parentId?: string;
+
   plugin?: ChatPluginPayload;
   pluginState?: any;
 
-  // 引用
+  /**
+   * quoted other message's id
+   */
   quotaId?: string;
   /**
-   * 角色
-   * @description 消息发送者的角色
+   * message role type
    */
-  role: LLMRoleType;
+  role: MessageRoleType;
   sessionId?: string;
+
+  tool_call_id?: string;
+  tools?: ChatToolPayload[];
+
   /**
    * 保存到主题的消息
    */
   topicId?: string;
+  /**
+   * 观测链路 id
+   */
+  traceId?: string;
 }
 
 export type ChatMessageMap = Record<string, ChatMessage>;

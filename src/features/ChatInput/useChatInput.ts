@@ -1,11 +1,12 @@
 import { TextAreaRef } from 'antd/es/input/TextArea';
 import { useCallback, useRef, useState } from 'react';
 
-import { useIsMobile } from '@/hooks/useIsMobile';
+import { useAgentStore } from '@/store/agent';
+import { agentSelectors } from '@/store/agent/slices/chat';
 import { useChatStore } from '@/store/chat';
-import { useGlobalStore } from '@/store/global';
-import { useSessionStore } from '@/store/session';
-import { agentSelectors } from '@/store/session/slices/agent';
+import { chatSelectors } from '@/store/chat/selectors';
+import { useUserStore } from '@/store/user';
+import { modelProviderSelectors } from '@/store/user/selectors';
 
 import { useSendMessage } from './useSend';
 
@@ -13,38 +14,32 @@ export const useChatInput = () => {
   const ref = useRef<TextAreaRef>(null);
   const [expand, setExpand] = useState<boolean>(false);
   const onSend = useSendMessage();
-  const [inputHeight, updatePreference] = useGlobalStore((s) => [
-    s.preference.inputHeight,
-    s.updatePreference,
-  ]);
-  const canUpload = useSessionStore(agentSelectors.modelHasVisionAbility);
+
+  const model = useAgentStore(agentSelectors.currentAgentModel);
+  const canUpload = useUserStore(modelProviderSelectors.isModelEnabledUpload(model));
+
   const [loading, value, onInput, onStop] = useChatStore((s) => [
-    !!s.chatLoadingId,
+    chatSelectors.isAIGenerating(s),
     s.inputMessage,
     s.updateInputMessage,
     s.stopGenerateMessage,
   ]);
-  const mobile = useIsMobile();
 
   const handleSend = useCallback(() => {
     setExpand(false);
-    if (mobile) {
-      ref?.current?.blur();
-    }
+
     onSend();
-  }, [onSend, mobile]);
+  }, [onSend]);
 
   return {
     canUpload,
     expand,
-    inputHeight,
     loading,
     onInput,
     onSend: handleSend,
     onStop,
     ref,
     setExpand,
-    updatePreference,
     value,
   };
 };

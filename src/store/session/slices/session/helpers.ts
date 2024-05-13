@@ -1,14 +1,12 @@
-import { LobeAgentSession, LobeSessions, SessionGroupDefaultKeys } from '@/types/session';
+import { DEFAULT_AGENT_LOBE_SESSION } from '@/const/session';
+import { LobeAgentSession, LobeSessions } from '@/types/session';
 
-import { initLobeSession } from './initialState';
-
-export const getSessionPinned = (session: LobeAgentSession) =>
-  session.group === SessionGroupDefaultKeys.Pinned;
+export const getSessionPinned = (session: LobeAgentSession) => session.pinned;
 
 const getSessionById = (id: string, sessions: LobeSessions): LobeAgentSession => {
   const session = sessions.find((s) => s.id === id);
 
-  if (!session) return initLobeSession;
+  if (!session) return DEFAULT_AGENT_LOBE_SESSION;
 
   return session;
 };
